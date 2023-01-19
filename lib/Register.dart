@@ -16,7 +16,7 @@ TextEditingController c_password = TextEditingController();
 TextEditingController date = TextEditingController();
 TextEditingController address = TextEditingController();
 
-File? profileImage;
+
 class Register extends StatefulWidget {
   const Register({Key? key}) : super(key: key);
   @override
@@ -28,6 +28,7 @@ class _RegisterState extends State<Register> {
   SaveDataLocally savedata = new SaveDataLocally();
   bool _isHidden = true;
   bool _isHidden1 = true;
+  File? profileImage;
 
   RegExp pass_valid = RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$');
   RegExp email_valid = RegExp("^[a-zA-Z0-9+_.-]+@gmail.com");
@@ -53,9 +54,9 @@ class _RegisterState extends State<Register> {
 
   Future pickProfileFromGallary() async {
     final profileImagePicker = await ImagePicker().pickImage(source: ImageSource.gallery);
-    final File profile = File(profileImagePicker!.path);
+    File? profile = File(profileImagePicker!.path);
     if(profileImagePicker == null ) return;
-    final path = profile.path;
+    final path = profile!.path;
     savedata.saveImage(path);
     print('image path');
     print(path);
@@ -65,10 +66,10 @@ class _RegisterState extends State<Register> {
   }
   Future pickProfileFromCamera() async {
     final profileImagePicker = await ImagePicker().pickImage(source: ImageSource.camera);
-    final File profile = File(profileImagePicker!.path);
+    File? profile = File(profileImagePicker!.path);
     if(profileImagePicker == null ) return;
-    final path = profile.path;
-    savedata.saveImage(path);
+    final path = profile!.path;
+   savedata.saveImage(path);
     print('image path');
     print(path);
     setState(() {
