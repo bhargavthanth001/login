@@ -15,72 +15,61 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-
-compareCells() {
-  // Reset groups
-  group.clear();
+removeMatchedCells(List<CellModel> cells) {
+  debugPrint("Cell Length => ${cells.length}");
   
-  // Iterate through the grid
-  for (int row = 0; row < 15; row++) {
-    for (int col = 0; col < 15; col++) {
-      // Check horizontal matches
-      List<CellModel> horizontalMatch = _checkHorizontal(row, col);
-      if (horizontalMatch.length >= 3) {
-        group.addAll(horizontalMatch);
+  // Mark cells as empty by setting id to 0
+  for (int index = 0; index < cells.length; index++) {
+    cells[index].id = 0; // empty cell
+    cells[index].color = Colors.transparent; // represent empty visually
+    debugPrint("Cell Row => ${cells[index].row}, Col => ${cells[index].column}");
+  }
+
+  applyGravity();
+}
+
+void applyGravity() {
+  for (int col = 0; col < 15; col++) {
+    // Start from the bottom row and go upwards
+    for (int row = 14; row >= 0; row--) {
+      if (grid[row][col].id == 0) {
+        // Find the closest non-empty cell above
+        for (int aboveRow = row - 1; aboveRow >= 0; aboveRow--) {
+          if (grid[aboveRow][col].id != 0) {
+            // Swap the current empty cell with the one above
+            grid[row][col] = grid[aboveRow][col];
+            grid[aboveRow][col] = CellModel(
+              id: 0, // now this cell is empty
+              row: aboveRow,
+              column: col,
+              color: Colors.transparent,
+            );
+            break;
+          }
+        }
       }
+    }
+  }
 
-      // Check vertical matches
-      List<CellModel> verticalMatch = _checkVertical(row, col);
-      if (verticalMatch.length >= 3) {
-        group.addAll(verticalMatch);
+  // After gravity is applied, fill the empty cells at the top
+  fillEmptyCells();
+}
+
+void fillEmptyCells() {
+  for (int col = 0; col < 15; col++) {
+    for (int row = 0; row < 15; row++) {
+      if (grid[row][col].id == 0) {
+        final color = colors[random.nextInt(colors.length)];
+        grid[row][col] = CellModel(
+          id: getId(color),
+          row: row,
+          column: col,
+          color: color,
+        );
       }
     }
   }
-  
-  // Remove the matched cells (for now replace them with a new random color)
-  _removeMatchedCells();
-  
-  debugPrint("Total Matched Group Size => ${group.length}");
-}
 
-// Check horizontal matches starting from (row, col)
-List<CellModel> _checkHorizontal(int row, int col) {
-  List<CellModel> match = [];
-  int initialId = grid[row][col].id;
-
-  for (int i = col; i < 15; i++) {
-    if (grid[row][i].id == initialId) {
-      match.add(grid[row][i]);
-    } else {
-      break;  // Stop matching if we find a different block
-    }
-  }
-
-  return match;
-}
-
-// Check vertical matches starting from (row, col)
-List<CellModel> _checkVertical(int row, int col) {
-  List<CellModel> match = [];
-  int initialId = grid[row][col].id;
-
-  for (int i = row; i < 15; i++) {
-    if (grid[i][col].id == initialId) {
-      match.add(grid[i][col]);
-    } else {
-      break;  // Stop matching if we find a different block
-    }
-  }
-
-  return match;
-}
-
-// Replace matched cells with new random colors
-_removeMatchedCells() {
-  for (var cell in group) {
-    final color = colors[random.nextInt(colors.length)];
-    cell.id = getId(color);  // Update the id with the new color
-    cell.color = color;  // Change the color of the matched cell
-  }
-  group.clear();  // Clear group after updating
+  // Update the view with the new grid
+  grid.refresh();
 }
