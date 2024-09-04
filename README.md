@@ -15,88 +15,182 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+class HomeController extends GetxController {
+  RxList<List<CellModel>> grid = RxList<List<CellModel>>();
+  var groups = <GroupModel>[];
 
-void main() {
-  runApp(MyApp());
-}
+  final random = Random();
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GetMaterialApp(
-      home: BlastAnimationScreen(),
-    );
-  }
-}
-
-class BlastController extends GetxController with SingleGetTickerProviderMixin {
-  AnimationController animationController;
-  Animation<double> scaleAnimation;
-  Animation<double> fadeAnimation;
+  final colors = [
+    Colors.red,
+    Colors.blue,
+    Colors.yellow,
+    Colors.purple,
+  ];
 
   @override
   void onInit() {
     super.onInit();
-
-    // Initialize the AnimationController with GetX's mixin
-    animationController = AnimationController(
-      duration: Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    // Define a scaling animation (starts from 1.0 to 1.5, then fades)
-    scaleAnimation = Tween<double>(begin: 1.0, end: 1.5).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeOut),
-    );
-
-    // Define a fade animation (from visible to invisible)
-    fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeOut),
-    );
-
-    // Start the animation as soon as the controller is initialized
-    animationController.forward();
+    initializeGrid();
+    compareCells();
   }
 
-  @override
-  void onClose() {
-    animationController.dispose();
-    super.onClose();
+  initializeGrid() {
+    grid.value = List.generate(
+      15,
+      (column) => List.generate(
+        15,
+        (row) {
+          final color = colors[random.nextInt(colors.length)];
+          return CellModel(
+            id: getId(color),
+            row: row,
+            column: column,
+            color: color,
+          );
+        },
+      ),
+    );
+  }
+
+  compareCells() {
+    groups.clear();
+    for (int row = 0; row < 15; row++) {
+      for (int col = 0; col < 15; col++) {
+        int id = random.nextInt(1000);
+        List<CellModel> horizontalMatch = checkHorizontal(row, col);
+        if (horizontalMatch.length >= 3) {
+          GroupModel model = GroupModel(id: id, cells: horizontalMatch);
+          groups.add(model);
+        }
+        List<CellModel> verticalMatch = checkVertical(row, col);
+        if (verticalMatch.length >= 3) {
+          GroupModel model = GroupModel(id: id, cells: verticalMatch);
+          groups.add(model);
+        }
+      }
+    }
+
+    debugPrint(groups.length.toString());
+    if (groups.isNotEmpty) {
+      for (int i = 0; i < groups.length; i++) {
+        removeMatchedCells(groups[i].cells);
+      }
+    } else {
+      debugPrint("No Match Found...");
+    }
+  }
+
+  List<CellModel> checkHorizontal(int row, int col) {
+    List<CellModel> match = [];
+    int initialId = grid[row][col].id;
+    for (int i = row; i < 15; i++) {
+      if (grid[i][col].id == initialId) {
+        match.add(grid[i][col]);
+      } else {
+        break;
+      }
+    }
+    return match;
+  }
+
+  List<CellModel> checkVertical(int row, int col) {
+    List<CellModel> match = [];
+    int initialId = grid[row][col].id;
+    for (int i = col; i < 15; i++) {
+      if (grid[row][i].id == initialId) {
+        match.add(grid[row][i]);
+      } else {
+        break;
+      }
+    }
+    return match;
+  }
+
+  removeMatchedCells(List<CellModel> cells) {
+    for (int index = 0; index < cells.length; index++) {
+      cells[index].id = 0;
+      cells[index].color = Colors.transparent;
+    }
+    Timer(const Duration(milliseconds: 500), () async {
+      await applyRemove(cells);
+    });
+  }
+
+  applyRemove(List<CellModel> cells) {
+    for (int col = 0; col < 15; col++) {
+      for (int row = 14; row >= 0; row--) {
+        if (grid[row][col].id == 0) {
+          for (int aboveRow = row - 1; aboveRow >= 0; aboveRow--) {
+            if (grid[aboveRow][col].id != 0) {
+              var temp = grid[aboveRow][col];
+              grid[aboveRow][col] = grid[row][col];
+              grid[row][col] = temp;
+            }
+          }
+        }
+      }
+    }
+    grid.refresh();
+    fillEmptyCells();
+  }
+
+  void fillEmptyCells() {
+    for (int col = 0; col < 15; col++) {
+      for (int row = 0; row < 15; row++) {
+        if (grid[row][col].id == 0) {
+          final color = colors[random.nextInt(colors.length)];
+          grid[row][col] = CellModel(
+            id: getId(color),
+            row: row,
+            column: col,
+            color: color,
+          );
+        }
+      }
+    }
+    grid.refresh();
+    Timer(const Duration(milliseconds: 500), () async {
+      await compareCells();
+    });
   }
 }
 
-class BlastAnimationScreen extends StatelessWidget {
+class HomeView extends GetView<HomeController> {
+  const HomeView({super.key});
+
   @override
   Widget build(BuildContext context) {
-    // Initialize the BlastController
-    final BlastController blastController = Get.put(BlastController());
-
     return Scaffold(
-      appBar: AppBar(title: Text('Candy Crush Blast Animation with GetX')),
-      body: Center(
-        child: GetBuilder<BlastController>(
-          builder: (_) {
-            return AnimatedBuilder(
-              animation: blastController.animationController,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: blastController.fadeAnimation,
-                  child: ScaleTransition(
-                    scale: blastController.scaleAnimation,
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      color: Colors.red, // Color of the box
-                    ),
-                  ),
-                );
-              },
-            );
-          },
+        appBar: AppBar(
+          title: const Text('HomeView'),
+          centerTitle: true,
         ),
-      ),
-    );
+        body: Obx(() {
+          return GridView.count(
+            crossAxisCount: 15,
+            mainAxisSpacing: 2,
+            crossAxisSpacing: 2,
+            children: List.generate(15 * 15, (index) {
+              int row = index ~/ 15;
+              int column = index % 15;
+              CellModel cell = controller.grid[row][column];
+
+              return AnimatedPositioned(
+                duration: const Duration(milliseconds: 500),
+                top: cell.row * 40.0, // Assuming each cell height is 40
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 500),
+                  opacity: cell.color == Colors.transparent ? 0 : 1,
+                  child: Container(
+                    width: 40.0, // Assuming cell width is 40
+                    height: 40.0,
+                    color: cell.color,
+                  ),
+                ),
+              );
+            }),
+          );
+        }));
   }
 }
