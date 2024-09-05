@@ -15,105 +15,38 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-class HomeController extends GetxController {
-  RxList<List<CellModel>> grid = RxList<List<CellModel>>();
-  var groups = <GroupModel>[];
+class CellModel {
+  int id;
+  int row;
+  int column;
+  Color color;
+  double top;
 
-  final random = Random();
+  CellModel({
+    required this.id,
+    required this.row,
+    required this.column,
+    required this.color,
+    this.top = 0.0,  // New property for animation
+  });
+}
 
-  final colors = [
-    Colors.red,
-    Colors.blue,
-    Colors.yellow,
-    Colors.purple,
-  ];
 
-  @override
-  void onInit() {
-    super.onInit();
-    initializeGrid();
-    compareCells();
-  }
 
-  initializeGrid() {
-    grid.value = List.generate(
-      15,
-      (column) => List.generate(
-        15,
-        (row) {
-          final color = colors[random.nextInt(colors.length)];
-          return CellModel(
-            id: getId(color),
-            row: row,
-            column: column,
-            color: color,
-          );
-        },
-      ),
-    );
-  }
+class HomeController extends GetxController with GetSingleTickerProviderStateMixin {
+  // Rest of the controller code...
 
-  compareCells() {
-    groups.clear();
-    for (int row = 0; row < 15; row++) {
-      for (int col = 0; col < 15; col++) {
-        int id = random.nextInt(1000);
-        List<CellModel> horizontalMatch = checkHorizontal(row, col);
-        if (horizontalMatch.length >= 3) {
-          GroupModel model = GroupModel(id: id, cells: horizontalMatch);
-          groups.add(model);
-        }
-        List<CellModel> verticalMatch = checkVertical(row, col);
-        if (verticalMatch.length >= 3) {
-          GroupModel model = GroupModel(id: id, cells: verticalMatch);
-          groups.add(model);
-        }
-      }
-    }
-
-    debugPrint(groups.length.toString());
-    if (groups.isNotEmpty) {
-      for (int i = 0; i < groups.length; i++) {
-        removeMatchedCells(groups[i].cells);
-      }
-    } else {
-      debugPrint("No Match Found...");
-    }
-  }
-
-  List<CellModel> checkHorizontal(int row, int col) {
-    List<CellModel> match = [];
-    int initialId = grid[row][col].id;
-    for (int i = row; i < 15; i++) {
-      if (grid[i][col].id == initialId) {
-        match.add(grid[i][col]);
-      } else {
-        break;
-      }
-    }
-    return match;
-  }
-
-  List<CellModel> checkVertical(int row, int col) {
-    List<CellModel> match = [];
-    int initialId = grid[row][col].id;
-    for (int i = col; i < 15; i++) {
-      if (grid[row][i].id == initialId) {
-        match.add(grid[row][i]);
-      } else {
-        break;
-      }
-    }
-    return match;
-  }
+  var gridAnimationDuration = const Duration(milliseconds: 500); // Animation duration
 
   removeMatchedCells(List<CellModel> cells) {
-    for (int index = 0; index < cells.length; index++) {
-      cells[index].id = 0;
-      cells[index].color = Colors.transparent;
+    for (var cell in cells) {
+      cell.id = 0; 
+      cell.color = Colors.transparent;
     }
-    Timer(const Duration(milliseconds: 500), () async {
-      await applyRemove(cells);
+
+    // Delay for the removal animation
+    Future.delayed(gridAnimationDuration, () {
+      applyRemove(cells);
     });
   }
 
@@ -124,15 +57,25 @@ class HomeController extends GetxController {
           for (int aboveRow = row - 1; aboveRow >= 0; aboveRow--) {
             if (grid[aboveRow][col].id != 0) {
               var temp = grid[aboveRow][col];
+
+              // Update position for the animation
+              temp.top = (row - aboveRow) * 40.0;  // Adjust this for correct spacing
+
               grid[aboveRow][col] = grid[row][col];
               grid[row][col] = temp;
+              break;
             }
           }
         }
       }
     }
+
+    // Fill the empty cells after the animation completes
+    Future.delayed(gridAnimationDuration, () {
+      fillEmptyCells();
+    });
+
     grid.refresh();
-    fillEmptyCells();
   }
 
   void fillEmptyCells() {
@@ -145,16 +88,22 @@ class HomeController extends GetxController {
             row: row,
             column: col,
             color: color,
+            top: 0.0,
           );
         }
       }
     }
+
     grid.refresh();
-    Timer(const Duration(milliseconds: 500), () async {
-      await compareCells();
-    });
+    compareCells();
   }
+
+  // Rest of the controller code...
 }
+
+
+
+
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -162,35 +111,42 @@ class HomeView extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('HomeView'),
-          centerTitle: true,
-        ),
-        body: Obx(() {
-          return GridView.count(
-            crossAxisCount: 15,
-            mainAxisSpacing: 2,
-            crossAxisSpacing: 2,
-            children: List.generate(15 * 15, (index) {
-              int row = index ~/ 15;
-              int column = index % 15;
-              CellModel cell = controller.grid[row][column];
-
-              return AnimatedPositioned(
-                duration: const Duration(milliseconds: 500),
-                top: cell.row * 40.0, // Assuming each cell height is 40
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 500),
-                  opacity: cell.color == Colors.transparent ? 0 : 1,
-                  child: Container(
-                    width: 40.0, // Assuming cell width is 40
-                    height: 40.0,
-                    color: cell.color,
-                  ),
+      appBar: AppBar(
+        title: const Text('HomeView'),
+        centerTitle: true,
+      ),
+      body: Obx(
+        () {
+          return Stack(
+            children: [
+              GridView.builder(
+                itemCount: 15 * 15,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 15,
+                  crossAxisSpacing: 2,
+                  mainAxisSpacing: 2,
                 ),
-              );
-            }),
+                itemBuilder: (context, index) {
+                  int row = index ~/ 15;
+                  int column = index % 15;
+                  CellModel cell = controller.grid[row][column];
+
+                  return AnimatedPositioned(
+                    key: ValueKey(cell.id),
+                    duration: controller.gridAnimationDuration,
+                    top: cell.top,  // Use the top position for animation
+                    child: AnimatedContainer(
+                      duration: controller.gridAnimationDuration,
+                      color: cell.color,
+                      child: const SizedBox(width: 40, height: 40), // Adjust cell size here
+                    ),
+                  );
+                },
+              ),
+            ],
           );
-        }));
+        },
+      ),
+    );
   }
 }
