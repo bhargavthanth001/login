@@ -229,36 +229,81 @@ class HomeView extends GetView<HomeController> {
         centerTitle: true, 
         actions: [ 
           IconButton( 
-              onPressed: controller.initializeGrid, 
-              icon: const Icon( 
-                Icons.restart_alt, 
-                color: Colors.white, 
-              )) 
-        ], 
-      ), 
-      body: Obx( 
-        () { 
-          return GridView.builder( 
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 15, 
-              mainAxisSpacing: 2, 
-              crossAxisSpacing: 2,
-            ), 
-            itemCount: 15 * 15, 
-            itemBuilder: (context, index) { 
-              int row = index ~/ 15; 
-              int column = index % 15; 
-              CellModel cell = controller.grid[row][column]; 
-              return AnimatedContainer( 
-                duration: controller.animationDuration, 
-                curve: Curves.easeOut, 
-                color: cell.color, 
-                child: cell.id == 0 ? SizedBox.shrink() : null, 
-              ); 
-            }, 
-          ); 
-        }, 
-      ), 
-    ); 
-  } 
+              onPressed: 
+
+
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: Text('Scall Out/In Animation')),
+        body: Center(child: ScallAnimationContainer()),
+      ),
+    );
+  }
+}
+
+class ScallAnimationContainer extends StatefulWidget {
+  @override
+  _ScallAnimationContainerState createState() => _ScallAnimationContainerState();
+}
+
+class _ScallAnimationContainerState extends State<ScallAnimationContainer> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _borderRadiusAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    _borderRadiusAnimation = Tween<double>(begin: 50.0, end: 20.0).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            borderRadius: BorderRadius.circular(_borderRadiusAnimation.value),
+          ),
+          child: Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Center(child: Text('Scall Animation', textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 }
