@@ -1,82 +1,32 @@
-class HomeView extends GetView<HomeController> {
-  const HomeView({super.key});
+#include <stdio.h>
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('HomeView'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: controller.initializeGrid,
-            icon: const Icon(Icons.restart_alt, color: Colors.white),
-          )
-        ],
-      ),
-      body: Obx(
-        () {
-          return GestureDetector(
-            onPanUpdate: (details) {
-              // Detect swipe direction and initiate swap
-              if (details.delta.dx > 0) {
-                // Swiped right
-                handleSwipe(SwipeDirection.right);
-              } else if (details.delta.dx < 0) {
-                // Swiped left
-                handleSwipe(SwipeDirection.left);
-              } else if (details.delta.dy > 0) {
-                // Swiped down
-                handleSwipe(SwipeDirection.down);
-              } else if (details.delta.dy < 0) {
-                // Swiped up
-                handleSwipe(SwipeDirection.up);
-              }
-            },
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 15,
-                mainAxisSpacing: 2,
-                crossAxisSpacing: 2,
-              ),
-              itemCount: 15 * 15,
-              itemBuilder: (context, index) {
-                int row = index ~/ 15;
-                int column = index % 15;
-                CellModel cell = controller.grid[row][column];
-                return ColoredBox(color: cell.color);
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
+int main() {
+    int n = 31;  // Total width of the pattern (31 columns)
+    int m = 6;   // Total height of the pattern (6 rows)
 
-  void handleSwipe(SwipeDirection direction) {
-    // Map swipe direction to cell coordinates
-    // Call controller.swapCells with appropriate coordinates
-  }
-}
-
-class HomeController extends GetxController {
-  // Assume grid is a 2D list of CellModel
-  var grid = List.generate(15, (i) => List.generate(15, (j) => CellModel(Colors.primaries[Random().nextInt(Colors.primaries.length)])));
-
-  void swapCells(int row1, int col1, int row2, int col2) {
-    if (isValidSwap(row1, col1, row2, col2)) {
-      CellModel temp = grid[row1][col1];
-      grid[row1][col1] = grid[row2][col2];
-      grid[row2][col2] = temp;
-
-      // Optionally, trigger any additional logic such as checking for matches
+    // Loop through each row
+    for (int i = 1; i <= m; i++) {
+        // Loop through each column
+        for (int j = 1; j <= n; j++) {
+            // First and last rows are filled with '*'
+            if (i == 1 || i == m) {
+                printf("*");
+            } else if (j == 1 || j == n) {  // First and last columns are '*'
+                printf("*");
+            } else {
+                // Inner pattern with spaces and '#'
+                if ((i == 2 && j == 27) ||  // Second row, 27th column is '#'
+                    (i == 3 && (j == 22 || j == 27)) ||  // Third row, 22nd and 27th columns are '#'
+                    (i == 4 && j == 6) ||  // Fourth row, 6th column is '#'
+                    (i == 5 && (j == 6 || j == 11))) {  // Fifth row, 6th and 11th columns are '#'
+                    printf("#");
+                } else {
+                    printf(" ");  // Otherwise print space
+                }
+            }
+        }
+        printf("\n");  // Move to the next line after each row
     }
-  }
 
-  bool isValidSwap(int row1, int col1, int row2, int col2) {
-    // Basic bounds check and whether cells are adjacent
-    return (row1 == row2 && (col1 - col2).abs() == 1) || (col1 == col2 && (row1 - row2).abs() == 1);
-  }
+    return 0;
 }
-
-enum SwipeDirection { left, right, up, down }
