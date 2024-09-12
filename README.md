@@ -1,46 +1,37 @@
-// Online C compiler to run C program online
-#include <stdio.h>
+// Online Java Compiler
+// Use this editor to write, compile and run your Java code online
 
-int main() {
-    for(int i = 0; i <= 5; i++){
-        for(int j = 0; j <= 30;j++){
-            if(i == 0 || i == 5 || j == 0 || j == 30){
-                printf("*");
-            }
-            else{
-                if ((i == 1 && j == 26) ||
-                    (i == 2 && (j == 21 || j == 26)) ||
-                    (i == 3 && j == 5) ||
-                    (i == 4 && (j == 5 || j == 10))) {
-                    printf("#");
-                } else {
-                    printf(" ");
+class HelloWorld {
+    public static void main(String[] args) {
+        int rows = 6;  
+        int cols = 31;
+        
+        int[][] points = {
+            {1, 26}, 
+            {2, 21}, {2, 26}, 
+            {3, 5}, 
+            {4, 5}, {4, 10},
+        };
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if(i == 0 || i == rows-1 || j == 0 || j == cols-1){
+                    System.out.print("*");
+                }else if(isPoint(i,j,points)){
+                    System.out.print("#");
+                }
+                else {
+                    System.out.print(" ");
                 }
             }
+            System.out.println(); 
         }
-        printf("\n");
     }
-}
-// Online C compiler to run C program online
-#include <stdio.h>
-
-int main() {
-    for(int i = 0; i <= 5; i++){
-        for(int j = 0; j <= 30;j++){
-            if(i == 0 || i == 5 || j == 0 || j == 30){
-                printf("*");
-            }
-            else{
-                if ((i == 1 && j == 26) ||
-                    (i == 2 && (j == 21 || j == 26)) ||
-                    (i == 3 && j == 5) ||
-                    (i == 4 && (j == 5 || j == 10))) {
-                    printf("#");
-                } else {
-                    printf(" ");
-                }
+    private static boolean isPoint(int i,int j, int[][] positions){
+        for (int[] position : positions) {
+            if (position[0] == i && position[1] == j) {
+                return true;
             }
         }
-        printf("\n");
+        return false;
     }
 }
